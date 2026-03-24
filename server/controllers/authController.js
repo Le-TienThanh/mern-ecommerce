@@ -6,12 +6,21 @@ import { sendToken } from '../utils/jwtToken.js';
 import { generateEmailTemplate } from '../utils/generateForgotPasswordEmailTemplate.js';
 import { sendEmail } from '../utils/sendEmail.js';
 import { generateResetPasswordToken } from '../utils/generateResetpasswordToken.js';
+import crypto from 'crypto';
 
 export const register = catchAsyncErrors(async (req, res, next) => {
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
         return next(
             new ErrorHandler('Please provide all required fields', 400),
+        );
+    }
+    if (password.length < 8 || password.length > 16) {
+        return next(
+            new ErrorHandler(
+                'Password must be between 8 and 16 characters',
+                400,
+            ),
         );
     }
     const isAlreadyRegistered = await database.query(
@@ -92,6 +101,7 @@ export const forgotPassword = catchAsyncErrors(async (req, res, next) => {
     );
     const resetPasswordUrl = `${frontendUrl}/password/reset/${resetToken}`;
     const message = generateEmailTemplate(resetPasswordUrl);
+    
     try {
         await sendEmail({
             email: user.email,
@@ -107,7 +117,7 @@ export const forgotPassword = catchAsyncErrors(async (req, res, next) => {
             'UPDATE users SET reset_password_token = NULL, reset_password_expires = NULL WHERE email = $1',
             [email],
         );
-        console.log('error: ',error)
+        console.log('error: ', error);
         return next(
             new ErrorHandler(
                 'Failed to send email. Please try again later.',
@@ -116,3 +126,71 @@ export const forgotPassword = catchAsyncErrors(async (req, res, next) => {
         );
     }
 });
+
+export const resetPassword = catchAsyncErrors(async (req, res, next) => {
+    const { token } = req.params;
+    const resetPasswordToken = crypto
+        .createHash('sha256')
+        .update(token)
+        .digest('hex');
+    const user = await database.query(
+        `SELECT * FROM users WHERE reset_password_token = $1 AND reset_password_expires > NOW()`,
+        [resetPasswordToken],
+    );
+    
+
+    if (user.rows.length === 0) {
+        return next(
+            new ErrorHandler('Invalid or expired password reset token', 400),
+        );
+    }
+   
+    if (req.body.password !== req.body.confirmPassword) {
+        return next(new ErrorHandler('Password do not match', 400));
+    }
+    if (
+        req.body.password?.length < 8 ||
+        req.body.password?.length > 16 ||
+        req.body.confirmPassword?.length < 8 ||
+        req.body.confirmPassword?.length > 16
+    ) {
+        return next(
+            new ErrorHandler(
+                'Password must be between 8 and 16 characters',
+                400,
+            ),
+        );
+    }
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    const updateUser = await database.query(
+        `UPDATE users SET password = $1, reset_password_token = NULL, reset_password_expires = NULL WHERE id = $2 RETURNING *`,
+        [hashedPassword, user.rows[0].id],
+    )
+    sendToken(updateUser.rows[0], 200, 'Password reset successful', res);
+});
+
+export const updatePassword = catchAsyncErrors(async (req, res, next) => {
+    const {currentPassword, newPassword, confirmNewPassword} = req.body;
+    if(!currentPassword || !newPassword || !confirmNewPassword){
+        return next(new ErrorHandler('Please provide all required fields', 400));
+    }
+    const isPasswordMatched = await bcrypt.compare(currentPassword, req.user.password);
+    if(!isPasswordMatched){
+        return next(new ErrorHandler('Current password is incorrect', 400));
+    }
+    if(newPassword !== confirmNewPassword){
+        return next(new ErrorHandler('New password and confirm new password do not match', 400));
+    }
+    if(newPassword.length < 8 || newPassword.length > 16 || confirmNewPassword.length < 8 || confirmNewPassword.length > 16){
+        return next(new ErrorHandler('New password must be between 8 and 16 characters', 400));
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await database.query(
+        'UPDATE users SET password = $1 WHERE id = $2',
+        [hashedPassword, req.user.id],
+    );
+    res.status(200).json({
+        success: true,
+        message: 'Password updated successfully',
+    });
+})
