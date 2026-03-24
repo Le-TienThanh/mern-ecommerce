@@ -1,5 +1,5 @@
 import express from 'express';
-import { getUser, login, logout, register } from '../controllers/authController.js';
+import { forgotPassword, getUser, login, logout, register } from '../controllers/authController.js';
 import { isAuthenticated } from '../middlewares/authMiddleware.js';
 
 
@@ -9,6 +9,7 @@ router.post("/register", register);
 router.post("/login", login);
 router.get("/me", isAuthenticated, getUser);
 router.get("/logout", isAuthenticated, logout);
+router.post("/password/forgot", forgotPassword);
 
 
 export default router;
