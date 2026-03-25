@@ -3,7 +3,7 @@ import {
     createProduct,
     fetchAllProducts,
     updateProduct,
-    // deleteProduct,
+    deleteProduct,
     // fetchSingleProduct,
     // postProductReview,
     // deleteReview,
@@ -32,12 +32,12 @@ router.put(
     authorizedRoles('Admin'),
     updateProduct,
 );
-// router.delete(
-//     '/admin/delete/:productId',
-//     isAuthenticated,
-//     authorizedRoles('Admin'),
-//     deleteProduct,
-// );
+router.delete(
+    '/admin/delete/:productId',
+    isAuthenticated,
+    authorizedRoles('Admin'),
+    deleteProduct,
+);
 // router.post('/ai-search', isAuthenticated, fetchAIFilteredProducts);
 
 export default router;
