@@ -15,6 +15,7 @@ export async function createProductsTable() {
            FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
            );`;
         await database.query(query);
+        
     } catch (error) {
         console.error('Failed To Create Products Table.', error);
         process.exit(1);

@@ -6,6 +6,7 @@ import fileUpload from 'express-fileupload';
 import { createTables } from './utils/createTables.js';
 import { errorMiddleware } from './middlewares/errorMiddleware.js';
 import authRouter from './router/authRoutes.js';
+import productRouter from './router/productRoutes.js';
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use(fileUpload({
     useTempFiles: true,
 }))
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/product", productRouter);
 
 
 createTables();
