@@ -1,7 +1,7 @@
 import express from 'express';
 import {
     createProduct,
-    // fetchAllProducts,
+    fetchAllProducts,
     // updateProduct,
     // deleteProduct,
     // fetchSingleProduct,
@@ -22,7 +22,7 @@ router.post(
     authorizedRoles('Admin'),
     createProduct,
 );
-// router.get('/', fetchAllProducts);
+router.get('/', fetchAllProducts);
 // router.get('/singleProduct/:productId', fetchSingleProduct);
 // router.put('/post-new/review/:productId', isAuthenticated, postProductReview);
 // router.delete('/delete/review/:productId', isAuthenticated, deleteReview);
