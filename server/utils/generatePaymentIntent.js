@@ -1,19 +1,18 @@
-import database from "../database/db.js";
-import Stripe from "stripe";
+import database from '../database/db.js';
+import Stripe from 'stripe';
+
 import { config } from 'dotenv';
 
 config({ path: './config/config.env' });
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-
 export const generatePaymentIntent = async (orderId, totalPrice) => {
     try {
-        
         // Convert VND to USD
-        const usdAmount = totalPrice / 25000; 
+        const usdAmount = totalPrice / 25000;
         const paymentIntent = await stripe.paymentIntents.create({
-            amount: Math.round(usdAmount * 100), 
+            amount: Math.round(usdAmount * 100),
             currency: 'usd',
         });
         await database.query(
@@ -23,14 +22,12 @@ export const generatePaymentIntent = async (orderId, totalPrice) => {
         return {
             success: true,
             clientSecret: paymentIntent.client_secret,
-        }
-        
+        };
     } catch (error) {
-        console.error("Payment Error: ", error.message || error);
+        console.error('Payment Error: ', error.message || error);
         return {
             success: false,
             message: 'Payment processing failed',
         };
-        
     }
-}
+};
